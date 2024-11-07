@@ -175,4 +175,50 @@ App.post("/users", async (req, res) => {
   }
 });
 
+// Add a new user route
+App.post("/users", async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    // Check if user already exists
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
+      return res.status(400).json({
+        success: false,
+        message: "User with this email already exists"
+      });
+    }
+
+    // Hash the password
+    const salt = await bcrypt.genSalt(NumSaltRounds);
+    const hashedPassword = await bcrypt.hash(password, salt);
+
+    // Create new user
+    const user = new User({
+      email,
+      password: hashedPassword
+    });
+
+    // Save user to database
+    await user.save();
+
+    res.status(201).json({
+      success: true,
+      message: "User created successfully",
+      data: {
+        id: user._id,
+        email: user.email
+      }
+    });
+
+  } catch (err) {
+    console.error("Error creating user:", err);
+    res.status(500).json({
+      success: false, 
+      message: "Error creating user"
+    });
+  }
+});
+
+
 module.exports = App;
