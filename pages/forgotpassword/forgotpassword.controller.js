@@ -24,7 +24,7 @@ App.post("/forgot-password", async (req, res) => {
 
     // Set reset token and expiry time (e.g., 1 hour from now)
     user.resetPasswordToken = resetToken;
-    user.resetPasswordExpire = Date.now() + 3600000; // 1 hour
+    user.resetPasswordExpire = Date.now() + 7200000; // 1 hour
     await user.save();
 
     // Set up the email with a link to reset the password
@@ -80,9 +80,10 @@ App.post("/resetPassword", async (req, res) => {
       });
     }
 
-    // Check if the token has expired
+    // Check if the token has expired (2 hours limit)
     const currDateTime = new Date();
-    if (currDateTime > user.resetPasswordExpires) {
+    const twoHoursInMs = 2 * 60 * 60 * 1000; // 2 hours in milliseconds
+    if (currDateTime - user.resetPasswordExpire > twoHoursInMs) {
       return res.json({
         success: false,
         message: "Reset Password link has expired!",
@@ -140,7 +141,7 @@ App.post("/users", async (req, res) => {
     if (existingUser) {
       return res.status(400).json({
         success: false,
-        message: "User with this email already exists"
+        message: "User with this email already exists",
       });
     }
 
@@ -151,7 +152,7 @@ App.post("/users", async (req, res) => {
     // Create new user
     const user = new User({
       email,
-      password: hashedPassword
+      password: hashedPassword,
     });
 
     // Save user to database
@@ -162,15 +163,14 @@ App.post("/users", async (req, res) => {
       message: "User created successfully",
       data: {
         id: user._id,
-        email: user.email
-      }
+        email: user.email,
+      },
     });
-
   } catch (err) {
     console.error("Error creating user:", err);
     res.status(500).json({
-      success: false, 
-      message: "Error creating user"
+      success: false,
+      message: "Error creating user",
     });
   }
 });
